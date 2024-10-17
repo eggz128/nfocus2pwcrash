@@ -29,7 +29,7 @@ test('hello world', async({page}) => {  //Use modern async/await function syntax
     let passwordField = page.locator('#password'); //No await - we're just storing the 'how to find' not actually finding
     await passwordField.fill('edgewords123'); //Finds the element, then does the action.
 
-    await page.getByRole('link', { name: 'Submit' }).click();
+    await page.getByRole('link', { name: /sub.*/i }).click();
 
     //Used record at cursor to generate this code
     await page.locator('#name').fill('Steve');
@@ -39,9 +39,14 @@ test('hello world', async({page}) => {  //Use modern async/await function syntax
 
     //Assertions recorded with recorder
     //Assertions have a 5s timeout by default
-    await expect(page.getByRole('link', { name: 'Submit' })).toBeVisible();
-    await expect(page.locator('h1')).toContainText('Add A Record To the Database');
-    await expect(page.locator('#name')).toHaveValue('Steve');
+
+    await expect.soft(page.getByRole('link', { name: 'Go' })).toBeVisible({timeout: 6000});
+
+    const slowAssertion = expect.configure({timeout: 7000})
+    await slowAssertion.soft(page.locator('h1')).toContainText('Add A Record To the Databasexxxx');
+    await slowAssertion(page.locator('#name')).toHaveValue('Stevexxxx');
 
 });
+
+
 

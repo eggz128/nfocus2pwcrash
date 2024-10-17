@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test('test', async ({ page }) => {
-  await page.goto('https://www.edgewordstraining.co.uk/demo-site/');
+  await page.goto('/demo-site/');
 
   await page.getByRole('searchbox', { name: 'Search for:' }).fill('cap');
   await page.getByRole('searchbox', { name: 'Search for:' }).press('Enter');
@@ -36,4 +36,5 @@ test('check if "I\'m Feeling Lucky" button is on Google home page', async ({ pag
 test('check for apple image', async ({ page }) => {
   await page.goto('https://www.edgewordstraining.co.uk/webdriver2/docs/basicHtml.html');
   await expect(page.locator('img[src*="apple.jpg"]')).toBeVisible(); //This fails because there are 3 images
+  
 });
