@@ -1,58 +1,89 @@
-import { test, expect } from '@playwright/test';
+import {  test, expect } from '@playwright/test';
 
-test('add a cap to the cart', async ({ page }) => {
-  
-  await page.goto('https://www.edgewordstraining.co.uk/demo-site/');
-  //await page.getByLabel("Search for:").click();
+test.use({launchOptions: {slowMo: 3000}}) //All tests in this file have a 3 second pause between steps. Cannot use this in a test.describe() block.
 
-  await page.getByRole('searchbox', { name: 'Search for:' }).click(); //name: value is not an exact match by default. It's treated more like a substring match. So you could delete "for:" and this would still work.
-  await page.getByRole('searchbox', { name: /Search.*/ }).fill('cap'); //You can also use regex
-  await page.getByRole('searchbox', { name: 'Search', exact: true}).press('Enter'); //If you want an exact match set the exact: property to true. This line will fail.
-  
+test.beforeAll(async ({ page }) => {
+  console.log("Executes once before any tests in this file have run")
 });
 
-test('all products', async ({ page }) => {
-  await page.goto('https://www.edgewordstraining.co.uk/demo-site/');
-  const newProducts = page.getByLabel('Recent Products');
-  for (const prod of await newProducts.locator('h2:not(.section-title)').all()) {
-    console.log(await prod.textContent());
-  };
+test.afterAll(async ({ page }) => {
+  console.log("Executes once after all tests in this file have run")
 });
 
-test('test', async ({ page }) => {
+test.beforeEach(async ({ page }) => {
+  console.log("Executes before the beginning of each test in this file")
+})
 
-  await page.goto('https://www.edgewordstraining.co.uk/webdriver2/');
-  await page.getByText('Login To Restricted Area').click();
+test.afterEach(async ({ page }) => {
+  console.log("Executes after the end of each test in this file")
+})
+
+
+test.describe('This is a suite', () => {
+  test.setTimeout(15000); //Tests in this describe have only 15seconds to complete vs default 30 for those outside
+  test.use({ 
+    locale: 'en-US',
+    //launchOptions: {slowMo: 3000}, //Cannot use({ launchOptions }) in a describe group, because it forces a new worker.
+    actionTimeout: 6000, //Setting an action time out for all tests in this describe
+   });
+  test.only('add a cap to the cart', async ({ page }) => {
+    //page.setDefaultTimeout(5000); //Setting an action timeout for this test only
+
+    await page.goto('https://www.edgewordstraining.co.uk/demo-site/');
+    //await page.getByLabel("Search for:").click();
   
-  const username = await page.getByRole('row', { name: 'User Name?' }) //You can capture a locator reference. Note this is not an element as such, but rather how to find the element.
-  await username.locator('#username').click(); //So when you use the reference a new search is performed. WebDrivers StaleElement exceptions are not a problem for Playwright.
-  //await username.locator('#username').fill('edgewords');
-  await username.locator('#username').pressSequentially('edgewords', {delay: 1000}); //Method used to be called pressSequence()?
+    await page.getByRole('searchbox', { name: 'Search for:' }).click(); //name: value is not an exact match by default. It's treated more like a substring match. So you could delete "for:" and this would still work.
+    await page.getByRole('searchbox', { name: /Search.*/ }).fill('cap'); //You can also use regex
+    await page.getByRole('searchbox', { name: 'Search', exact: true}).press('Enter'); //If you want an exact match set the exact: property to true. This line will fail.
+    
+  });
+  test.describe('an inner suite', () => {
+    test('all products', async ({ page }) => {
+      await page.goto('https://www.edgewordstraining.co.uk/demo-site/');
+      const newProducts = page.getByLabel('Recent Products');
+      for (const prod of await newProducts.locator('h2:not(.section-title)').all()) {
+        console.log(await prod.textContent());
+      };
+    });
+  })
+  test('test', async ({ page }) => {
 
-  await page.locator('#password').click();
-  await page.locator('#password').fill('edgewords123');
+    await page.goto('https://www.edgewordstraining.co.uk/webdriver2/');
+    await page.getByText('Login To Restricted Area').click();
+    
+    const username = await page.getByRole('row', { name: 'User Name?' }) //You can capture a locator reference. Note this is not an element as such, but rather how to find the element.
+    await username.locator('#username').click(); //So when you use the reference a new search is performed. WebDrivers StaleElement exceptions are not a problem for Playwright.
+    //await username.locator('#username').fill('edgewords');
+    await username.locator('#username').pressSequentially('edgewords', {delay: 1000}); //Method used to be called pressSequence()?
+  
+    await page.locator('#password').click();
+    await page.locator('#password').fill('edgewords123');
+  
+    //await page.getByRole('link', { name: 'Submit' }).click();
+  
+    //PLaywright adds lots of extensions to CSS. e.g.
+    //Relative location searches :left-of()
+    //Inner text queries :text("Sometext")
+    //Restart a new search with the results of the last one >>
+    // if there are multiple matches pick the 1st, 2nd etc (0 indexed) nth=2
+    // Is the element visible :visible
+    //await page.locator('a:left-of(:text("Clear")):below(:text("Password?")) >> nth=2').click();
+    await page.locator('a:left-of(:text("Clear")):below(:text("Password?")):visible') //If thre are multiple matches, PW wont just use the first. You must ensure there is only 1 before performing an action.
+          .filter({hasText: 'Submit'}) //One option is to filter the maultiple matches down.
+          .click();
+  
+    await page.getByRole('link', { name: 'Log Out' }).click();
+    //ToDo: handle the JS confirm alert as the recorder didn't do this
+  
+    //Generally dont capture things from the page first then assert on them.
+    //Instead pass the locator for the thing to capture to expect, then chain your assertion
+    //await expect(page.locator('body')).toContainText('User is not Logged in');
+  
+  });
+})
 
-  //await page.getByRole('link', { name: 'Submit' }).click();
 
-  //PLaywright adds lots of extensions to CSS. e.g.
-  //Relative location searches :left-of()
-  //Inner text queries :text("Sometext")
-  //Restart a new search with the results of the last one >>
-  // if there are multiple matches pick the 1st, 2nd etc (0 indexed) nth=2
-  // Is the element visible :visible
-  //await page.locator('a:left-of(:text("Clear")):below(:text("Password?")) >> nth=2').click();
-  await page.locator('a:left-of(:text("Clear")):below(:text("Password?")):visible') //If thre are multiple matches, PW wont just use the first. You must ensure there is only 1 before performing an action.
-        .filter({hasText: 'Submit'}) //One option is to filter the maultiple matches down.
-        .click();
 
-  await page.getByRole('link', { name: 'Log Out' }).click();
-  //ToDo: handle the JS confirm alert as the recorder didn't do this
-
-  //Generally dont capture things from the page first then assert on them.
-  //Instead pass the locator for the thing to capture to expect, then chain your assertion
-  //await expect(page.locator('body')).toContainText('User is not Logged in');
-
-});
 
 
 test('Locator Handler', async ({ page }) => {
@@ -95,7 +126,14 @@ test("Dragdrop demo", async ({page}) => {
   await page.waitForTimeout(2000) //Dumb 2 second wait for us to confirm the above worked.
 })
 
-test("Assertion demos @tag1", { tag: ['@smoke','@regression'], annotation: {type:'issue', description: 'This is a description'}},async ({page, browserName})=>{
+//Tests can be 'tagged' either in the name or in a second optional test() parameter.
+test("Assertion demos @tag1", //Arg1 = test name
+  {                           //Arg2 (Optional) tagging and annotations
+    tag: ['@smoke','@regression'], 
+    annotation: {type:'issue', description: 'This is a description'},
+  }
+  ,async ({page, browserName})=>{ //Arg3 = test function
+
   //test.skip(browserName === 'chromium', 'skipping on chromium')
   await page.goto("https://www.edgewordstraining.co.uk/webdriver2/docs/forms.html");
   await page.locator('#textInput').fill("Hello world");
@@ -110,7 +148,7 @@ test("Assertion demos @tag1", { tag: ['@smoke','@regression'], annotation: {type
   //await slowExpect.soft(heading).toHaveText("For"); //Fails as "For" is not the exact text
   await slowExpect.soft(heading).toHaveText(/For.*/); //Passes using this RegEx
   
-  await page.pause();
+  await page.pause(); //Only effective when running from command line and browser is headed
 
   //await expect(page.locator('#checkbox')).not.toBeChecked(); //Negate assertions with .not
 
@@ -184,7 +222,7 @@ test("Waits", async ({page}) => {
   await page.locator('#image-holder > img').click();
   
   await page.getByRole('link', { name: 'Home' }).click();
-
+  
 })
 
 
@@ -200,7 +238,14 @@ test("Waiting for a pop up window", async ({page, context}) => { //We need the w
 
   await page.waitForTimeout(2000); //Thread.sleep(2000); -- Try your very hardest to never resort to this. But if all else fails...
 
-  await newPage.locator('.orange-button').click(); //closes the newly opened popup
+  //await newPage.locator('.orange-button').click(); //closes the newly opened popup
+  await newPage.close();
+
 
   await page.getByRole('link', {name: 'Load Content'}).click();
+})
+
+//API test
+test("API test", async ({request}) => {
+ 
 })
